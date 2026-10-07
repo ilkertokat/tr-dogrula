@@ -107,6 +107,66 @@ class DogrulamaTest {
         assertEquals("Garanti BBVA", Iban.banka(iban).orElseThrow());
     }
 
+    // --- Plaka --------------------------------------------------------------------
+    @ParameterizedTest
+    @ValueSource(strings = {
+            "34 A 1234", "34 A 12345",      // 1 harf + 4/5 rakam
+            "06 AB 123", "06 AB 1234",      // 2 harf + 3/4 rakam
+            "35 ABC 12", "35 ABC 123",      // 3 harf + 2/3 rakam
+            "01 Z 0001", "81 YZ 999",       // il kodu sınırları
+            "34abc123", "34-ab-1234",       // boşluksuz, küçük harf, tireli
+    })
+    void plaka_gecerliler(String plaka) {
+        assertTrue(Plaka.gecerliMi(plaka), Plaka.dogrula(plaka).hata());
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            "00 A 1234, 01-81",
+            "82 AB 123, 01-81",
+            "34 Q 1234, kullanılmaz",
+            "34 AW 123, kullanılmaz",
+            "34 AX 1234, kullanılmaz",
+            "34 ÇA 123, kullanılmaz",
+            "34 AŞ 1234, kullanılmaz",
+            "34 A 123, 4-5 haneli",
+            "34 AB 12, 3-4 haneli",
+            "34 AB 12345, 3-4 haneli",
+            "34 ABC 1234, 2-3 haneli",
+            "34 ABCD 12, biçimi",
+            "34 A 123456, biçimi",
+            "3 A 1234, biçimi",
+            "ABC 123, biçimi",
+            "'', biçimi",
+    })
+    void plaka_gecersizler_neden_ile(String plaka, String parca) {
+        Sonuc s = Plaka.dogrula(plaka);
+        assertFalse(s.gecerli(), plaka);
+        assertTrue(s.hata().contains(parca), s.hata());
+    }
+
+    @Test
+    void plaka_bicimlendirme_ve_il_kodu() {
+        assertEquals("34 ABC 123", Plaka.bicimlendir("34abc123"));
+        assertEquals("06 A 12345", Plaka.bicimlendir(" 06-a-12345 "));
+        assertEquals(6, Plaka.ilKodu("06 AB 1234"));
+        assertEquals(81, Plaka.ilKodu("81 Z 1234"));
+        assertThrows(IllegalArgumentException.class, () -> Plaka.bicimlendir("99 A 1234"));
+        assertThrows(IllegalArgumentException.class, () -> Plaka.ilKodu(null));
+    }
+
+    @Test
+    void plaka_turkce_locale_buyuk_harf_sorunu_yok() {
+        java.util.Locale eski = java.util.Locale.getDefault();
+        try {
+            java.util.Locale.setDefault(java.util.Locale.forLanguageTag("tr-TR"));
+            assertTrue(Plaka.gecerliMi("34 ib 123")); // "i" → "İ" olsaydı geçersiz olurdu
+            assertEquals("34 IB 123", Plaka.bicimlendir("34 ib 123"));
+        } finally {
+            java.util.Locale.setDefault(eski);
+        }
+    }
+
     @Test
     void iban_turkce_locale_buyuk_harf_sorunu_yok() {
         java.util.Locale eski = java.util.Locale.getDefault();

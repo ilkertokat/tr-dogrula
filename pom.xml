@@ -6,7 +6,7 @@
   <artifactId>tr-dogrula</artifactId>
   <version>1.0.0</version>
   <name>TR Doğrula</name>
-  <description>T.C. kimlik, vergi kimlik ve IBAN doğrulama kütüphanesi</description>
+  <description>T.C. kimlik, vergi kimlik, IBAN ve araç plakası doğrulama kütüphanesi</description>
   <properties>
     <maven.compiler.release>17</maven.compiler.release>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
