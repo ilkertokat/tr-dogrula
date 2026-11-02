@@ -9,14 +9,35 @@
 
 > *English summary below.*
 
+## Kurulum
+
+Kütüphane Maven Central'da yayımlanmadı; kaynaktan yerel Maven deposuna kurulur:
+
+```bash
+git clone https://github.com/ilkertokat/tr-dogrula.git
+cd tr-dogrula
+mvn install
+```
+
+```xml
+<dependency>
+  <groupId>dev.ilkertokat</groupId>
+  <artifactId>tr-dogrula</artifactId>
+  <version>1.0.0</version>
+</dependency>
+```
+
+Bağımlılığı olmadığı için `src/main/java/dev/ilkertokat/trdogrula` klasörünü projeye kopyalamak da yeterlidir (Java 17+).
+
 ## Kullanım
 
 ```java
 TcKimlik.gecerliMi("10000000146");                 // true
 TcKimlik.dogrula("10000000145").hata();            // "Kontrol haneleri tutmuyor"
 
-VergiNo.gecerliMi("1234567890");                   // kontrol hanesine göre true/false
-VergiNo.kontrolHanesi("123456789");                // son haneyi hesaplar
+VergiNo.gecerliMi("1234567890");                   // true
+VergiNo.gecerliMi("1234567891");                   // false — "Kontrol hanesi tutmuyor"
+VergiNo.kontrolHanesi("123456789");                // 0 — ilk 9 haneden son haneyi hesaplar
 
 Iban.gecerliMi("tr33 0006 1005 1978 6457 8413 26");  // true — boşluk, tire, küçük harf kabul edilir
 Iban.bicimlendir("TR330006100519786457841326");      // "TR33 0006 1005 1978 6457 8413 26"
@@ -31,6 +52,23 @@ Plaka.ilKodu("35 B 1234");                         // 35
 ```
 
 Her `dogrula()` çağrısı bir `Sonuc` kaydı döner: `gecerli`, temizlenmiş `deger` ve geçersizse `hata`.
+
+### API
+
+| Sınıf | Metot | Döner / davranış |
+|---|---|---|
+| hepsi | `dogrula(String)` | `Sonuc`; `null` girdi istisna atmaz, geçersiz sayılır |
+| hepsi | `gecerliMi(String)` | `boolean` (`dogrula(...).gecerli()`) |
+| `TcKimlik` | `kontrolHaneleri(String ilk9)` | 10. ve 11. hane, ör. `"46"`; ilk 9 hane 1–9 ile başlayan 9 rakam değilse `IllegalArgumentException` |
+| `VergiNo` | `kontrolHanesi(String ilk9)` | son hane (`int`); 9 rakam değilse `IllegalArgumentException` |
+| `Iban` | `temizle(String)` | boşluk ve tireler atılmış, büyük harfli IBAN |
+| `Iban` | `bicimlendir(String)` | dörder karakterlik gruplar (doğrulama yapmaz) |
+| `Iban` | `banka(String)` | `Optional<String>`; yalnız geçerli TR IBAN ve bilinen banka kodu için dolu |
+| `Plaka` | `temizle(String)` | boşluk ve tireler atılmış, büyük harfli plaka |
+| `Plaka` | `bicimlendir(String)` | `"34 ABC 123"` biçimi; geçersiz plakada `IllegalArgumentException` (mesajı `hata` ile aynı) |
+| `Plaka` | `ilKodu(String)` | il kodu (`int`, 1–81); geçersiz plakada `IllegalArgumentException` |
+
+Test verisi üretmek için: `"100000001" + TcKimlik.kontrolHaneleri("100000001")` → `"10000000146"` (geçerli bir örnek numara).
 
 ## Algoritmalar
 
@@ -64,6 +102,8 @@ CI testleri Java 17 ve 21 üzerinde çalıştırır.
 ## English
 
 **TR Doğrula** is a dependency-free Java 17 library that validates Turkish national ID numbers (T.C. Kimlik No), tax numbers (VKN), IBANs (ISO 13616 mod-97, plus Turkey-specific length and reserved-digit rules, bank lookup for common banks and pretty-printing) and vehicle license plates (`Plaka`: province code 01–81, the six official letter/digit layouts such as `34 ABC 123`, and the excluded letters Ç Ğ İ Ö Ş Ü Q W X). Every validation returns a result with a user-facing reason when invalid. It is covered by 51 JUnit 5 tests, including property tests over 1,000 generated numbers each and a regression test for the Turkish-locale `i → İ` upper-casing pitfall; CI runs on Java 17 and 21.
+
+It is not published to Maven Central: run `mvn install` from a clone and depend on `dev.ilkertokat:tr-dogrula:1.0.0`, or copy the source package (no dependencies). Besides `dogrula`/`gecerliMi`, the public helpers are `TcKimlik.kontrolHaneleri` and `VergiNo.kontrolHanesi` (compute check digits, e.g. for test data), `Iban.temizle`/`bicimlendir`/`banka` and `Plaka.temizle`/`bicimlendir`/`ilKodu` (the last two throw `IllegalArgumentException` for an invalid plate); see the API table above.
 
 ## Lisans
 
